@@ -5,7 +5,7 @@
 		<hr>
 		<button v-if="!gameStarted" @click="startGame">Start Game</button>
 		<template v-else>
-			<input type="text" autocomplete="off" :disabled="gameOver" v-model="guess" />
+			<input type="text" autofocus autocomplete="off" :disabled="gameOver" v-model="guess" />
 			<p>
 				<strong>Time remaining:</strong> {{ Math.floor(timer / 60).toString().padStart(2, '0') }}:{{ (timer % 60).toString().padStart(2, '0') }}
 			</p>
@@ -32,6 +32,9 @@
 				</template>
 				<p>
 					<button @click="startGame">Restart Game</button>
+					<a target="_blank" :href="tweetLink">
+						Tweet your result!
+					</a>
 				</p>
 			</template>
 		</template>
@@ -66,11 +69,6 @@ Chart.register(LineController, CategoryScale, LinearScale, PointElement, LineEle
 const states = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"];
 const timeLimit = 600;
 
-interface FoundAtEntry {
-	timestamp: number;
-	state: string;
-}
-
 export default defineComponent({
 	name: 'App',
 	components: {LineChart},
@@ -78,7 +76,7 @@ export default defineComponent({
 		states,
 		guess: '',
 		found: [] as string[],
-		foundAt: [] as FoundAtEntry[],
+		foundAt: [] as number[],
 		available: [] as string[],
 		message: '',
 		gameStarted: false,
@@ -124,6 +122,7 @@ export default defineComponent({
 	methods: {
 		startGame() {
 			this.found = [];
+			this.foundAt = [];
 			this.guess = '';
 			this.message = '';
 			this.gameWon = false;
@@ -162,7 +161,7 @@ export default defineComponent({
 				let matched = this.available.splice(idx, 1);
 				this.found.push(matched[0]);
 				this.found.sort();
-				this.foundAt.push({timestamp: this.timer, state: matched[0]});
+				this.foundAt.push(this.timer);
 				this.guess = '';
 
 				if (this.available.length === 0) {
@@ -180,7 +179,7 @@ export default defineComponent({
 			let lastTimestamp = 0;
 			let stateCount = 1;
 			let averageWeight = 0.9;
-			for (let timestamp of this.foundAt.map(entry => timeLimit - entry.timestamp)) {
+			for (let timestamp of this.foundAt.map(timestamp => timeLimit - timestamp)) {
 				if (lastTimestamp > 0) {
 					statesPerSecond = (stateCount - 1) / timestamp;
 					averageStatesPerSecond = averageWeight * averageStatesPerSecond + (1 - averageWeight) * statesPerSecond;
@@ -191,7 +190,7 @@ export default defineComponent({
 				lastTimestamp = timestamp;
 			}
 
-			// throw away first measurement
+			// throw away first measurement since it is inaccurate
 			points.shift();
 
 			return {
@@ -220,6 +219,22 @@ export default defineComponent({
 					},
 				]
 			}
+		},
+
+		tweetLink() {
+			let timeTaken = Math.ceil((timeLimit - this.timer) / 60);
+			let timeTakenUnit = timeTaken === 1 ? 'minute' : 'minutes';
+			let statesFound = this.found.length;
+			let totalStates = states.length;
+			let text = 'I guessed ';
+			if (this.found.length < states.length) {
+				text += statesFound + ' out of ';
+			} else {
+				text += 'all ';
+			}
+			text += totalStates + ' US states within ' + timeTaken + ' ' + timeTakenUnit + '!\n\nTry it yourself: https://states-game.ricardoboss.de';
+
+			return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
 		}
 	}
 });
@@ -289,5 +304,10 @@ button {
 
 input {
 	background: #fafafa;
+}
+
+a {
+	color: #58a0bb;
+	text-decoration-color: #58A0BB33;
 }
 </style>
