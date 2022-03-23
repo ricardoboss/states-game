@@ -140,9 +140,14 @@ export default defineComponent({
 					clearInterval(this.timerHandle);
 				}
 			}, 1000);
+			window.onbeforeunload = (e) => {
+				e.preventDefault();
+				e.returnValue = "Your progress will not be saved. Are you sure you want to leave?";
+			};
 		},
 
 		endGame() {
+			window.onbeforeunload = null;
 			clearInterval(this.timerHandle);
 			this.gameOver = true;
 			this.gameWon = this.found.length === states.length;
