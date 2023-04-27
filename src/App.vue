@@ -173,7 +173,14 @@ export default defineComponent({
 
 	computed: {
 		foundChartData() {
-			let points = [];
+			let points = [
+				{
+					timestamp: 0,
+					statesPerSecond: 0,
+					averageStatesPerSecond: 0,
+					stateCount: 0,
+				}
+			];
 			let statesPerSecond = 0;
 			let averageStatesPerSecond = 0;
 			let lastTimestamp = 0;
